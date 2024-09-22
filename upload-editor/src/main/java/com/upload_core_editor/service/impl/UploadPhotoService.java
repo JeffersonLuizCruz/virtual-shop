@@ -1,6 +1,7 @@
 package com.upload_core_editor.service.impl;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -8,6 +9,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,18 +18,16 @@ import java.util.List;
 @Service
 public class UploadPhotoService {
 
-    private final Path fileUploadDir;
-    private final Path filePhotoOriginal;
-    private final Path filePhtoMarca;
+    private final Path directoryAbsolutePath;
+    private final Path directoryPhotoOriginal;
+    private final Path directoryPhotoMarca;
 
-    private final String diretorioOriginal = "caminho/para/original/"; // Defina o diretório para a versão original
-    private final String diretorioMarcaDagua = "caminho/para/marcva_dagua/"; // Defina o diretório para a versão com marca d'água
     private final String marcaDaguaTexto = "SUA MARCA D'ÁGUA"; // Texto da marca d'água
 
     public UploadPhotoService(FileStoragePropertiesServiceImpl fileStorageProperties) {
-        this.fileUploadDir = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
-        this.filePhotoOriginal = Paths.get(fileStorageProperties.getUploadDirOriginal()).toAbsolutePath().normalize();
-        this.filePhtoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).toAbsolutePath().normalize();
+        this.directoryAbsolutePath = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
+        this.directoryPhotoOriginal = Paths.get(fileStorageProperties.getUploadDirOriginal()).normalize();
+        this.directoryPhotoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).normalize();
     }
 
     public void uploadPhoto(MultipartFile[] files) {
@@ -37,13 +37,13 @@ public class UploadPhotoService {
             // Iterar sobre todas as fotos enviadas
             for (MultipartFile file : files) {
                 // Salvar a foto original
-                String nomeArquivoOriginal = salvarArquivo(file, diretorioOriginal);
+                String nomeArquivoOriginal = salvarArquivo(file);
 
                 // Gerar e salvar a versão com marca d'água
-                String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file, diretorioMarcaDagua);
+              //  String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file, diretorioMarcaDagua);
 
                 // Adicionar a resposta para cada arquivo
-                resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
+           //     resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -53,9 +53,16 @@ public class UploadPhotoService {
     }
 
     // Método para salvar a foto original
-    private String salvarArquivo(MultipartFile file, String diretorio) throws IOException {
-        String nomeArquivo = file.getOriginalFilename();
-        File destino = new File(diretorio + nomeArquivo);
+    private String salvarArquivo(MultipartFile file) throws IOException {
+        String nomeArquivo = StringUtils.cleanPath(file.getOriginalFilename());
+        System.out.println(nomeArquivo);
+        //File destino = new File(diretorio + nomeArquivo);
+        Path uploadDir = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString());
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);  // Cria o diretório se ele não existir
+        }
+
+        Path destino = uploadDir.resolve(nomeArquivo);
         file.transferTo(destino);
         return nomeArquivo;
     }
