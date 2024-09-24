@@ -42,10 +42,9 @@ public class UploadPhotoService {
                 String nomeArquivoOriginal = saveFiles(file);
 
                 // Gerar e salvar a versão com marca d'água
-               // String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file);
+                String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file);
 
-                // Adicionar a resposta para cada arquivo
-           //     resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
+                resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -82,7 +81,7 @@ public class UploadPhotoService {
         return fileName;
     }
 
-    private String aplicarMarcaDagua(MultipartFile file, String diretorio) throws IOException {
+    private String aplicarMarcaDagua(MultipartFile file) throws IOException {
         BufferedImage imagemOriginal = ImageIO.read(file.getInputStream());
 
         // Criar uma cópia da imagem original para adicionar a marca d'água
@@ -104,12 +103,14 @@ public class UploadPhotoService {
         g2d.dispose();
 
         // Definir o nome do arquivo com marca d'água
-        String nomeArquivo = "marca_" + file.getOriginalFilename();
-        File destino = new File(diretorio + nomeArquivo);
+        String fileName = "marca_" + file.getOriginalFilename();
+        Path destination = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoMarca.toString()).resolve(fileName);
+
+      //  File destino = new File(diretorio + nomeArquivo);
 
         // Salvar a imagem com marca d'água
-        ImageIO.write(imagemComMarcaDagua, "jpg", destino);
+        ImageIO.write(imagemComMarcaDagua, "jpg", destination.toFile());
 
-        return nomeArquivo;
+        return fileName;
     }
 }
