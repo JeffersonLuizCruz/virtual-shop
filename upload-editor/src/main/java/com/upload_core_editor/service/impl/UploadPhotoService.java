@@ -30,17 +30,19 @@ public class UploadPhotoService {
         this.directoryPhotoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).normalize();
     }
 
-    public void uploadPhoto(MultipartFile[] files) {
+    public List<String> uploadPhoto(MultipartFile[] files) {
         List<String> resposta = new ArrayList<>();
 
         try {
-            // Iterar sobre todas as fotos enviadas
+
+            createDirecotyCaseNoExist();
+
             for (MultipartFile file : files) {
                 // Salvar a foto original
-                String nomeArquivoOriginal = salvarArquivo(file);
+                String nomeArquivoOriginal = saveFiles(file);
 
                 // Gerar e salvar a versão com marca d'água
-              //  String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file, diretorioMarcaDagua);
+               // String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file);
 
                 // Adicionar a resposta para cada arquivo
            //     resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
@@ -48,23 +50,36 @@ public class UploadPhotoService {
         } catch (IOException e) {
             e.printStackTrace();
 
-            //todo
+            //toDO
+        }
+
+        return resposta;
+    }
+
+    private void createDirecotyCaseNoExist() throws IOException {
+        Path dirPhotoOriginal = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString());
+        Path dirPhotoMarca = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoMarca.toString());
+
+        if (!Files.exists(dirPhotoOriginal)) {
+            Files.createDirectories(dirPhotoOriginal);  // Cria o diretório se ele não existir
+        }
+
+        if (!Files.exists(dirPhotoMarca)) {
+            Files.createDirectories(dirPhotoMarca);  // Cria o diretório se ele não existir
         }
     }
 
     // Método para salvar a foto original
-    private String salvarArquivo(MultipartFile file) throws IOException {
-        String nomeArquivo = StringUtils.cleanPath(file.getOriginalFilename());
-        System.out.println(nomeArquivo);
-        //File destino = new File(diretorio + nomeArquivo);
-        Path uploadDir = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString());
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);  // Cria o diretório se ele não existir
-        }
+    private String saveFiles(MultipartFile file) throws IOException {
+        String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+        System.out.println(fileName);
+        Path destination = Paths
+                .get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString())
+                .resolve(fileName);
 
-        Path destino = uploadDir.resolve(nomeArquivo);
-        file.transferTo(destino);
-        return nomeArquivo;
+        file.transferTo(destination);
+
+        return fileName;
     }
 
     private String aplicarMarcaDagua(MultipartFile file, String diretorio) throws IOException {
