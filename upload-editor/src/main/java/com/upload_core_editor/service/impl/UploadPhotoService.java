@@ -1,5 +1,8 @@
 package com.upload_core_editor.service.impl;
 
+import com.upload_core_editor.model.entity.PhotoImage;
+import com.upload_core_editor.repository.PhotoImageRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +25,8 @@ public class UploadPhotoService {
     private final Path directoryPhotoOriginal;
     private final Path directoryPhotoMarca;
 
+    @Autowired private PhotoImageRepository photoImageRepository;
+
     private final String marcaDaguaTexto = "SUA MARCA D'ÁGUA"; // Texto da marca d'água
 
     public UploadPhotoService(FileStoragePropertiesServiceImpl fileStorageProperties) {
@@ -30,29 +35,27 @@ public class UploadPhotoService {
         this.directoryPhotoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).normalize();
     }
 
-    public List<String> uploadPhoto(MultipartFile[] files) {
-        List<String> resposta = new ArrayList<>();
+    public List<PhotoImage> uploadPhoto(MultipartFile[] files) {
+        List<PhotoImage> photoImages = new ArrayList<>();
 
         try {
 
             createDirecotyCaseNoExist();
 
             for (MultipartFile file : files) {
-                // Salvar a foto original
-                String nomeArquivoOriginal = saveFiles(file);
+                PhotoImage namePhotoOriginal = saveFiles(file);
+                photoImages.add(namePhotoOriginal);
 
-                // Gerar e salvar a versão com marca d'água
-                String nomeArquivoComMarcaDagua = aplicarMarcaDagua(file);
+                aplicarMarcaDagua(file);
 
-                resposta.add("Original: " + nomeArquivoOriginal + ", Com marca d'água: " + nomeArquivoComMarcaDagua);
             }
         } catch (IOException e) {
             e.printStackTrace();
 
-            //toDO
+            //toDO: Implementar exception personalizada.
         }
 
-        return resposta;
+        return photoImageRepository.saveAll(photoImages);
     }
 
     private void createDirecotyCaseNoExist() throws IOException {
@@ -69,16 +72,18 @@ public class UploadPhotoService {
     }
 
     // Método para salvar a foto original
-    private String saveFiles(MultipartFile file) throws IOException {
+    private PhotoImage saveFiles(MultipartFile file) throws IOException {
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-        System.out.println(fileName);
+
         Path destination = Paths
                 .get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString())
                 .resolve(fileName);
-
         file.transferTo(destination);
 
-        return fileName;
+        return PhotoImage.builder()
+                .description(fileName)
+                .editor("Hugo")
+                .build();
     }
 
     private String aplicarMarcaDagua(MultipartFile file) throws IOException {
