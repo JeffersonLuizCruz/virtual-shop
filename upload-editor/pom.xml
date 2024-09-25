@@ -17,7 +17,11 @@
 	<description>Demo project for Spring Boot</description>
 
 	<dependencies>
-		<!-- Dependências herdadas do pai, não é necessário repetir aqui -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
