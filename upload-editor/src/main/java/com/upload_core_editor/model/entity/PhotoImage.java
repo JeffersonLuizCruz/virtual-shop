@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor @AllArgsConstructor
@@ -18,5 +19,7 @@ public class PhotoImage implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String teste;
+    private String description;
+    private LocalDateTime uploadAt;
+    private String editor;
 }
