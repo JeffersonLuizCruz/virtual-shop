@@ -21,7 +21,15 @@ public class PhotoImage implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String description;
+    private String client;
+
+    private String nameFileOriginal;
+    private String pathFileOriginal;
+    private String urlFileOriginal;
+
+    private String nameFileWatermark;
+    private String pathFileWatermark;
+    private String urlFileWatermark;
 
     @CreationTimestamp
     private LocalDateTime uploadAt;
