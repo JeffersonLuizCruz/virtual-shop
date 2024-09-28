@@ -3,6 +3,7 @@ package com.upload_core_editor.service.impl;
 import com.upload_core_editor.model.entity.PhotoImage;
 import com.upload_core_editor.repository.PhotoImageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -10,43 +11,48 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class UploadPhotoService {
+public class PhotoManagementServiceImpl {
 
     private final Path directoryAbsolutePath;
     private final Path directoryPhotoOriginal;
     private final Path directoryPhotoMarca;
 
+    @Value("${file.url.photo}")
+    private String pathUrl;
+
     @Autowired private PhotoImageRepository photoImageRepository;
 
     private final String marcaDaguaTexto = "SUA MARCA D'ÁGUA"; // Texto da marca d'água
 
-    public UploadPhotoService(FileStoragePropertiesServiceImpl fileStorageProperties) {
+    public PhotoManagementServiceImpl(FileStoragePropertiesServiceImpl fileStorageProperties) {
         this.directoryAbsolutePath = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
         this.directoryPhotoOriginal = Paths.get(fileStorageProperties.getUploadDirOriginal()).normalize();
         this.directoryPhotoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).normalize();
     }
 
+    final String nameMockClient = "JoaquimDaSilvaPereira";
+
     public List<PhotoImage> uploadPhoto(MultipartFile[] files) {
-        List<PhotoImage> photoImages = new ArrayList<>();
+        List<String> photoImages = new ArrayList<>();
 
         try {
 
             createDirecotyCaseNoExist();
 
             for (MultipartFile file : files) {
-                PhotoImage namePhotoOriginal = saveFiles(file);
+                String namePhotoOriginal = transferFileToDirectory(file);
                 photoImages.add(namePhotoOriginal);
 
-                aplicarMarcaDagua(file);
+                applyWatermark(file);
 
             }
         } catch (IOException e) {
@@ -55,38 +61,58 @@ public class UploadPhotoService {
             //toDO: Implementar exception personalizada.
         }
 
-        return photoImageRepository.saveAll(photoImages);
+        List<PhotoImage> photoImageList = photoImages.stream()
+                .map(filename -> {
+            return PhotoImage.builder()
+                    .editor("Hugo Luiz")
+                    .client(nameMockClient)
+                    .nameFileOriginal(filename)
+                    .pathFileOriginal(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.toString()).toString())
+                    .urlFileOriginal(pathUrl.concat(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.resolve(filename).toString()).toString()))
+                    .nameFileWatermark("watermark_".concat(filename))
+                    .pathFileWatermark(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.toString()).toString())
+                    .urlFileWatermark(pathUrl.concat(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.resolve("watermark_".concat(filename)).toString()).toString()))
+                    .build();
+        }).collect(Collectors.toList());
+
+        return photoImageRepository.saveAll(photoImageList);
+    }
+
+    public List<PhotoImage> findAll(){
+        return photoImageRepository.findAll();
     }
 
     private void createDirecotyCaseNoExist() throws IOException {
-        Path dirPhotoOriginal = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString());
-        Path dirPhotoMarca = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoMarca.toString());
+        Path dirPhotoClient = Paths.get(this.directoryAbsolutePath.toString(), nameMockClient);
+        Path dirPhotoOriginal = Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.toString());
+        Path dirPhotoWatermark = Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.toString());
+
+        if (!Files.exists(dirPhotoClient)) {
+            Files.createDirectories(dirPhotoClient);  // Cria o diretório se ele não existir
+        }
 
         if (!Files.exists(dirPhotoOriginal)) {
             Files.createDirectories(dirPhotoOriginal);  // Cria o diretório se ele não existir
         }
 
-        if (!Files.exists(dirPhotoMarca)) {
-            Files.createDirectories(dirPhotoMarca);  // Cria o diretório se ele não existir
+        if (!Files.exists(dirPhotoWatermark)) {
+            Files.createDirectories(dirPhotoWatermark);  // Cria o diretório se ele não existir
         }
     }
 
     // Método para salvar a foto original
-    private PhotoImage saveFiles(MultipartFile file) throws IOException {
+    private String transferFileToDirectory(MultipartFile file) throws IOException {
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         Path destination = Paths
-                .get(this.directoryAbsolutePath.toString(), this.directoryPhotoOriginal.toString())
+                .get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.toString())
                 .resolve(fileName);
         file.transferTo(destination);
 
-        return PhotoImage.builder()
-                .description(fileName)
-                .editor("Hugo")
-                .build();
+        return fileName;
     }
 
-    private String aplicarMarcaDagua(MultipartFile file) throws IOException {
+    private void applyWatermark(MultipartFile file) throws IOException {
         BufferedImage imagemOriginal = ImageIO.read(file.getInputStream());
 
         // Criar uma cópia da imagem original para adicionar a marca d'água
@@ -108,14 +134,12 @@ public class UploadPhotoService {
         g2d.dispose();
 
         // Definir o nome do arquivo com marca d'água
-        String fileName = "marca_" + file.getOriginalFilename();
-        Path destination = Paths.get(this.directoryAbsolutePath.toString(), this.directoryPhotoMarca.toString()).resolve(fileName);
+        String fileName = "watermark_" + file.getOriginalFilename();
+        Path destination = Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.toString()).resolve(fileName);
 
       //  File destino = new File(diretorio + nomeArquivo);
 
         // Salvar a imagem com marca d'água
         ImageIO.write(imagemComMarcaDagua, "jpg", destination.toFile());
-
-        return fileName;
     }
 }
