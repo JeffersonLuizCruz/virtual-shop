@@ -3,16 +3,13 @@ package com.upload_core_editor.controller;
 import com.upload_core_editor.model.entity.PhotoImage;
 import com.upload_core_editor.service.impl.PhotoManagementServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/uploads/photo")
+@RequestMapping("/uploads/photos")
 public class PhotoManagementController {
 
     @Autowired private PhotoManagementServiceImpl photoManagement;
@@ -23,6 +20,7 @@ public class PhotoManagementController {
         return photoManagement.uploadPhoto(files);
     }
 
+    @GetMapping
     public List<PhotoImage> findAll(){
         return photoManagement.findAll();
     }
