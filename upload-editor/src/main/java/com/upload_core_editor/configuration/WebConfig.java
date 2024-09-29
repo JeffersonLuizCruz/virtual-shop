@@ -26,7 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/home/hugo/IdeaProjects/photoizer/upload-editor/uploads/JoaquimDaSilvaPereira/MarcaDagua/**")
+        registry.addResourceHandler("/uploads/JoaquimDaSilvaPereira/MarcaDagua/**")
                 .addResourceLocations("file:/home/hugo/IdeaProjects/photoizer/upload-editor/uploads/JoaquimDaSilvaPereira/MarcaDagua/");
     }
 }

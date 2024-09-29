@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class PhotoManagementServiceImpl {
 
     private final Path directoryAbsolutePath;
+    private final Path directoryRelativePath;
     private final Path directoryPhotoOriginal;
     private final Path directoryPhotoMarca;
 
@@ -37,6 +38,7 @@ public class PhotoManagementServiceImpl {
         this.directoryAbsolutePath = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
         this.directoryPhotoOriginal = Paths.get(fileStorageProperties.getUploadDirOriginal()).normalize();
         this.directoryPhotoMarca = Paths.get(fileStorageProperties.getUploadDirMarca()).normalize();
+        this.directoryRelativePath = Paths.get(fileStorageProperties.getUploadDir()).normalize();
     }
 
     final String nameMockClient = "JoaquimDaSilvaPereira";
@@ -61,6 +63,12 @@ public class PhotoManagementServiceImpl {
             //toDO: Implementar exception personalizada.
         }
 
+        List<PhotoImage> photoImageList = constructorPhotoImage(photoImages);
+
+        return photoImageRepository.saveAll(photoImageList);
+    }
+
+    private List<PhotoImage> constructorPhotoImage(List<String> photoImages) {
         List<PhotoImage> photoImageList = photoImages.stream()
                 .map(filename -> {
             return PhotoImage.builder()
@@ -68,14 +76,13 @@ public class PhotoManagementServiceImpl {
                     .client(nameMockClient)
                     .nameFileOriginal(filename)
                     .pathFileOriginal(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.toString()).toString())
-                    .urlFileOriginal(pathUrl.concat(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoOriginal.resolve(filename).toString()).toString()))
+                    .urlFileOriginal(pathUrl.concat(Paths.get(directoryRelativePath.toString(), nameMockClient, this.directoryPhotoOriginal.resolve(filename).toString()).toString()))
                     .nameFileWatermark("watermark_".concat(filename))
                     .pathFileWatermark(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.toString()).toString())
-                    .urlFileWatermark(pathUrl.concat(Paths.get(this.directoryAbsolutePath.toString(), nameMockClient, this.directoryPhotoMarca.resolve("watermark_".concat(filename)).toString()).toString()))
+                    .urlFileWatermark(pathUrl.concat(Paths.get(directoryRelativePath.toString(), nameMockClient, this.directoryPhotoMarca.resolve("watermark_".concat(filename)).toString()).toString()))
                     .build();
         }).collect(Collectors.toList());
-
-        return photoImageRepository.saveAll(photoImageList);
+        return photoImageList;
     }
 
     public List<PhotoImage> findAll(){
